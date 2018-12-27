@@ -1,28 +1,21 @@
-# import libraries for whole file to use 
+'''
+        The Matrix Script
+        =================
+        > Run with python 3
+'''
 import curses
 import time
 import random
 
+# Constants
 FREQ = 0.001
+MUTATION_DURATION = 50
 
-# TODO: handle resize
-# TODO: mutate symbol
-# TODO: shift group of symbols
-# TODO: implement do_nothing
-# TODO: add japanese characters
-# TODO: Add bold chars
 
-MUTATION_DURATION = 10
-
-class SymbolState:
-    MUTATING = 0
-    FIXED = 1
-
-class Symbol(object):
-    symbols = []
+class Symbol:
+    '''Single character on the terminal'''
 
     def __init__(self, matrix, column, y):
-        super()
         self._matrix = matrix
         self._column = column
         self._char_list = [
@@ -60,16 +53,17 @@ class Symbol(object):
         # if self._mutating == None then this symbols is not in a mutating
         # state, otherwise it is a positive int of remaining mutations to
         # undergo. On creation, symbols mutate.
+
+        # made state a named collection incase I want to transfure object properties
         self.state = {
             'mutating': MUTATION_DURATION,
             'x': self._column.x,
             'y': y,
             'char': random.choice(self._char_list),
         }
-
-        Symbol.symbols.append(self)
     
     def update(self):
+        '''Change state of symbol if required'''
         if self.mutating is not None:
             self.mutate()
             self.draw()
@@ -107,9 +101,10 @@ class Symbol(object):
         return self.state['char']
 
 
-class Column(object):
+class Column:
+    '''Stores a column of symbols for every column on the terminal'''
+
     def __init__(self, matrix, x):
-        super()
         self._matrix = matrix
         self._symbols = []
         self._x = x
@@ -130,13 +125,10 @@ class Column(object):
         for s in self._symbols:
             s.draw()
     
-    def split_n_drop(self):
-        pass
-    
     def update(self):
         for symbol in self._symbols:
             symbol.update()
-    
+        
     def __len__(self):
         return len(self._symbols)
 
@@ -145,9 +137,10 @@ class Column(object):
         return self._x
 
 
-class Matrix(object):
+class Matrix:
+    '''This object stores the columns and manipulates them'''
+
     def __init__(self, stdscr):
-        super()
         stdscr.clear()
         curses.noecho()
         curses.cbreak()
@@ -164,12 +157,13 @@ class Matrix(object):
         # TODO: fix the exit condition
         while user_input != ord('q'):
             column = random.choice(self._columns)
-            symbol = random.choice(Symbol.symbols) if len(Symbol.symbols) != 0 else None
+            # TODO: clean up 'column._symbols'
+            symbol = random.choice(column._symbols) if len(column._symbols) != 0 else None
             ops = [
                 lambda: column.grow(),
                 lambda: symbol.start_mutation() if symbol is not None else 0,
                 lambda: column.shift_random(),
-                lambda: column.split_n_drop(),
+                # lambda: column.split_n_drop(),
                 lambda: 0
             ]
             op = random.choice(ops)
@@ -192,7 +186,6 @@ class Matrix(object):
         return self._width
 
 def main():
-    # starts the library
     try:
         stdscr = curses.initscr()
         matrix = Matrix(stdscr)
