@@ -118,7 +118,19 @@ class Column(object):
         # if the column is full, do not grow it.
         if self._matrix.height <= len(self) + 1: return
         self._symbols.append(Symbol(self._matrix, self, len(self)))
+
     def shift_random(self):
+        if len(self._symbols) <= 1: return
+        if self._matrix.height <= len(self) + 1:
+            self._symbols.remove(self._symbols[-1])
+        pos = random.randint(0, len(self._symbols) - 1)
+        for s in self._symbols[pos:]:
+            s.state['y'] += 1
+        self._symbols.insert(pos, Symbol(self._matrix, self, pos))
+        for s in self._symbols:
+            s.draw()
+    
+    def split_n_drop(self):
         pass
     
     def update(self):
@@ -157,6 +169,7 @@ class Matrix(object):
                 lambda: column.grow(),
                 lambda: symbol.start_mutation() if symbol is not None else 0,
                 lambda: column.shift_random(),
+                lambda: column.split_n_drop(),
                 lambda: 0
             ]
             op = random.choice(ops)
