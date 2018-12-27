@@ -3,10 +3,9 @@ import curses
 import time
 import random
 
-FREQ = 0.01
+FREQ = 0.001
 
 # TODO: handle resize
-# TODO: grow columns
 # TODO: mutate symbol
 # TODO: shift group of symbols
 # TODO: implement do_nothing
@@ -35,7 +34,29 @@ class Symbol(object):
         self._char_list.extend([
             chr(x) for x in range(ord('A'), ord('Z') + 1)
         ])
-        self._char = random.choice(self._char_list)
+        self._char_list.extend(self._char_list)
+        self._char_list.extend(self._char_list)
+        self._char_list.extend(self._char_list)
+        # japanese numbers
+        self._char_list.extend([
+            chr(x) for x in range(12321, 12330)
+        ])
+        # japanese chars
+        self._char_list.extend([
+            chr(x) for x in range(12337, 12347)
+        ])
+        # more japanese chars
+        self._char_list.extend([
+            chr(x) for x in range(12353, 12439)
+        ])
+        # more japanese chars
+        self._char_list.extend([
+            chr(x) for x in range(12443, 12543)
+        ])
+        # more japanese chars
+        self._char_list.extend([
+            chr(x) for x in range(12549, 12590)
+        ])
         # if self._mutating == None then this symbols is not in a mutating
         # state, otherwise it is a positive int of remaining mutations to
         # undergo. On creation, symbols mutate.
@@ -43,6 +64,7 @@ class Symbol(object):
             'mutating': MUTATION_DURATION,
             'x': self._column.x,
             'y': y,
+            'char': random.choice(self._char_list),
         }
 
         Symbol.symbols.append(self)
@@ -53,14 +75,20 @@ class Symbol(object):
             self.draw()
     
     def mutate(self):
-        pass
+        if self.mutating is None: return
+        if self.mutating == 0:
+            self.state['mutating'] = None
+        else:
+            self.state['mutating'] -= 1
+        self.state['char'] = random.choice(self._char_list)
+
     
     def start_mutation(self):
-        self._mutating = MUTATION_DURATION
+        self.state['mutating'] = MUTATION_DURATION
     
     def draw(self):
         self.matrix.scr.move(self.y, self.x)
-        self.matrix.scr.addstr(self._char)
+        self.matrix.scr.addstr(self.char)
     
     @property
     def matrix(self):
@@ -74,6 +102,9 @@ class Symbol(object):
     @property
     def y(self):
         return self.state['y']
+    @property
+    def char(self):
+        return self.state['char']
 
 
 class Column(object):
@@ -87,6 +118,8 @@ class Column(object):
         # if the column is full, do not grow it.
         if self._matrix.height <= len(self) + 1: return
         self._symbols.append(Symbol(self._matrix, self, len(self)))
+    def shift_random(self):
+        pass
     
     def update(self):
         for symbol in self._symbols:
@@ -115,17 +148,20 @@ class Matrix(object):
         self._columns = [Column(self, i) for i, _ in enumerate(range(self._width))]
 
     def loop(self):
-        ops = [
-            'grow',
-            'mutate',
-            'shift',
-            'do nothing',
-        ]
         user_input = self._stdscr.getch()
         # TODO: fix the exit condition
         while user_input != ord('q'):
-            self._op_grow()
-            self.scr.clear()
+            column = random.choice(self._columns)
+            symbol = random.choice(Symbol.symbols) if len(Symbol.symbols) != 0 else None
+            ops = [
+                lambda: column.grow(),
+                lambda: symbol.start_mutation() if symbol is not None else 0,
+                lambda: column.shift_random(),
+                lambda: 0
+            ]
+            op = random.choice(ops)
+            op()
+            # self.scr.clear()
             self._iterations += 1
             for column in self._columns:
                 column.update()
@@ -142,54 +178,14 @@ class Matrix(object):
     def width(self):
         return self._width
 
-    def _op_grow(self):
-        """Select a random column to add a single symbol to."""
-        column = random.choice(self._columns)
-        column.grow()
-        
-
 def main():
     # starts the library
     try:
         stdscr = curses.initscr()
         matrix = Matrix(stdscr)
         matrix.loop()
-
-        # def choose_col():
-        #     col_n = random.randint(0, width-1)
-        #     return col_n
-        # def choose_symbol():
-        #     pass
-
-        # def grow():
-        #     col_n = choose_col()
-        #     col = columns[col_n]
-        #     col.append('x')
-        #     stdscr.move(len(col) - 1, col_n)
-        #     stdscr.addstr("x")
-        #     pass
-        # def mutate():
-        #     # stdscr.addstr("mutate ")
-        #     pass
-        # def shift():
-        #     pass
-        # def do_nothing():
-        #     # stdscr.addstr("do_nothing ")
-        #     pass
-        # operations = [grow, mutate, shift, do_nothing]
-
-        # # update the matrix interface
-        # user_input = stdscr.getch()
-        # while user_input != ord('q'):
-        #     op_count = random.randint(0, MAX_OP_COUNT)
-        #     f = operations[random.randint(0,len(operations)-1)]
-        #     f()
-        #     iterations += 1
-        #     time.sleep(0.01)
-        #     stdscr.refresh()
     finally:
         curses.endwin()
-
 
 if __name__ == "__main__":
     main()
